@@ -53,15 +53,15 @@ public class RegisterServlet extends HttpServlet {
 			int count = ps.executeUpdate();
 
 			if (count == 0) {
-				out.println("Record not stored into databas");
+				out.println("Record not stored into database");
 			} else {
 				out.println("Record stored into database for::" + name);
 			}
 		} catch (SQLException se) {
-
+			out.println("SQL Exception");
 			se.printStackTrace();
 		} catch (Exception e) {
-
+			out.println("Exception");
 			e.printStackTrace();
 		}
 		// close the stream

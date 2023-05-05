@@ -60,7 +60,7 @@ public class RegisterServletTest {
     }
 
     @Test
-    public void testDoPost() throws ServletException, IOException, SQLException {
+    public void testDoPostWithDBUpdate() throws ServletException, IOException, SQLException {
     	
         Connection mockConnection = mock(Connection.class);
         PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
@@ -75,8 +75,6 @@ public class RegisterServletTest {
 		String user = "appuser";
 		String pwd = "Abcd1234!";
 		
-       // when(DriverManager.getConnection(url, user, pwd)).thenReturn(mockConnection);
-
 		try (MockedStatic<DriverManager> driverManager = Mockito.mockStatic(DriverManager.class)) {
 			driverManager.when(() -> DriverManager.getConnection(url, user, pwd)).thenReturn(mockConnection);
 			// Stubbing JDBC calls
@@ -87,6 +85,42 @@ public class RegisterServletTest {
 
 	        assertEquals("Record stored into database for::John", writer.toString().trim());
 		}
+    }
+		
+		@Test
+	    public void testDoPostWithoutDBUpdate() throws ServletException, IOException, SQLException {
+	    	
+	        Connection mockConnection = mock(Connection.class);
+	        PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
+
+	        // Stubbing request parameters
+			/*
+			 * when(request.getParameter("name")).thenReturn("John");
+			 * when(request.getParameter("city")).thenReturn("New York");
+			 * when(request.getParameter("mobile")).thenReturn("1234567890");
+			 * when(request.getParameter("dob")).thenReturn("12-01-2007");
+			 */
+	        
+	        String url = "jdbc:mysql://test-mysql-java.mysql.database.azure.com:3306/firstdb?useSSL=true&requireSSL=false&serverTimezone=UTC";
+			String user = "appuser";
+			String pwd = "Abcd1234!";
+			
+			try (MockedStatic<DriverManager> driverManager = Mockito.mockStatic(DriverManager.class)) {
+				driverManager.when(() -> DriverManager.getConnection(url, user, pwd)).thenReturn(mockConnection);
+				// Stubbing JDBC calls
+		        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+		        when(mockPreparedStatement.executeUpdate()).thenReturn(0);
+
+		        servlet.doPost(request, response);
+
+		        assertEquals("Record not stored into database", writer.toString().trim());
+			}
+        
+    }
+		@Test
+	    public void testDoPostWithSQLException() throws ServletException, IOException, SQLException {
+	        servlet.doPost(request, response);
+	        assertEquals("SQL Exception", writer.toString().trim());
         
     }
     
