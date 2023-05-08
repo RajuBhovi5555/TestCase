@@ -1,4 +1,4 @@
-package test;
+package main;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,8 +18,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-
-import main.RegisterServlet;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.*;
@@ -87,14 +85,6 @@ public class RegisterServletTest {
 		Connection mockConnection = mock(Connection.class);
 		PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
 
-		// Stubbing request parameters
-		/*
-		 * when(request.getParameter("name")).thenReturn("John");
-		 * when(request.getParameter("city")).thenReturn("New York");
-		 * when(request.getParameter("mobile")).thenReturn("1234567890");
-		 * when(request.getParameter("dob")).thenReturn("12-01-2007");
-		 */
-
 		String url = "jdbc:mysql://test-mysql-java.mysql.database.azure.com:3306/firstdb?useSSL=true&requireSSL=false&serverTimezone=UTC";
 		String user = "appuser";
 		String pwd = "Abcd1234!";
@@ -111,11 +101,45 @@ public class RegisterServletTest {
 		}
 
 	}
-
+	
 	@Test
-	public void testDoPostWithSQLException() throws ServletException, IOException, SQLException {
-		servlet.doPost(request, response);
-		assertEquals("SQL Exception", writer.toString().trim());
+	public void testDoPostWithSQLExceptionDuringConnectingToDb() throws ServletException, IOException, SQLException {
+
+		Connection mockConnection = mock(Connection.class);
+		PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
+
+		String url = "jdbc:mysql://test-mysql-java.mysql.database.azure.com:3306/firstdb?useSSL=true&requireSSL=false&serverTimezone=UTC";
+		String user = "appuser";
+		String pwd = "Abcd1234!";
+
+		try (MockedStatic<DriverManager> driverManager = Mockito.mockStatic(DriverManager.class)) {
+			driverManager.when(() -> DriverManager.getConnection(url, user, pwd)).thenThrow(SQLException.class);
+			
+			servlet.doPost(request, response);
+			assertEquals("SQL Exception", writer.toString().trim());
+		}
+	}
+	
+	@Test
+	public void testDoPostWithSQLExceptionDuringSaving() throws ServletException, IOException, SQLException {
+
+		Connection mockConnection = mock(Connection.class);
+		PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
+
+		String url = "jdbc:mysql://test-mysql-java.mysql.database.azure.com:3306/firstdb?useSSL=true&requireSSL=false&serverTimezone=UTC";
+		String user = "appuser";
+		String pwd = "Abcd1234!";
+
+		try (MockedStatic<DriverManager> driverManager = Mockito.mockStatic(DriverManager.class)) {
+			driverManager.when(() -> DriverManager.getConnection(url, user, pwd)).thenReturn(mockConnection);
+			// Stubbing JDBC calls
+			when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+			when(mockPreparedStatement.executeUpdate()).thenThrow(SQLException.class);
+
+			servlet.doPost(request, response);
+			assertEquals("SQL Exception", writer.toString().trim());
+		}
+
 	}
 
 }
